@@ -30,12 +30,24 @@ def get_dashboard_summary(
 
     # Apply Scope
     if current_user.role == "INSTITUTION_USER":
+        if not current_user.institution_id:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Institution account has no institution assignment")
         app_query = app_query.filter(Application.institution_id == current_user.institution_id)
         doc_query = doc_query.filter(Document.institution_id == current_user.institution_id)
         evc_query = evc_query.filter(Application.institution_id == current_user.institution_id)
         und_query = und_query.filter(Undertaking.institution_id == current_user.institution_id)
-    # All officer roles share the same operational application set. Institution
-    # users are scoped above to their own institution.
+    elif current_user.role == "REGIONAL_OFFICER":
+        from fastapi import HTTPException
+        if not current_user.region_id:
+            raise HTTPException(status_code=403, detail="Regional officer account has no region assignment")
+        app_query = app_query.join(Institution, Application.institution_id == Institution.id).filter(Institution.region_id == current_user.region_id)
+        doc_query = doc_query.join(Institution, Document.institution_id == Institution.id).filter(Institution.region_id == current_user.region_id)
+        evc_query = evc_query.join(Institution, Application.institution_id == Institution.id).filter(Institution.region_id == current_user.region_id)
+        und_query = und_query.join(Institution, Undertaking.institution_id == Institution.id).filter(Institution.region_id == current_user.region_id)
+    elif current_user.role not in {"BUREAU_OFFICER", "SYSTEM_ADMIN"}:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Role is not authorized to view operational dashboard metrics")
 
     total_active = app_query.filter(
         Application.current_stage_code != "COMPLETED",
@@ -90,8 +102,18 @@ def get_stage_pendency(
     )
 
     if current_user.role == "INSTITUTION_USER":
+        if not current_user.institution_id:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Institution account has no institution assignment")
         query = query.filter(Application.institution_id == current_user.institution_id)
-    # Officer roles see the common application pendency across the whole demo.
+    elif current_user.role == "REGIONAL_OFFICER":
+        from fastapi import HTTPException
+        if not current_user.region_id:
+            raise HTTPException(status_code=403, detail="Regional officer account has no region assignment")
+        query = query.join(Institution, Application.institution_id == Institution.id).filter(Institution.region_id == current_user.region_id)
+    elif current_user.role not in {"BUREAU_OFFICER", "SYSTEM_ADMIN"}:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Role is not authorized to view application pendency")
     results = query.group_by(Application.current_stage_code).all()
     
     stage_names = {
@@ -120,9 +142,19 @@ def get_regional_workload(
     # institutions' regional activity from aggregate counts.
     if current_user.role == "INSTITUTION_USER":
         return []
+    if current_user.role == "REGIONAL_OFFICER":
+        if not current_user.region_id:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=403, detail="Regional officer account has no region assignment")
+        region_query = db.query(Region).filter(Region.id == current_user.region_id, Region.is_active == True)
+    elif current_user.role in {"BUREAU_OFFICER", "SYSTEM_ADMIN"}:
+        region_query = db.query(Region).filter(Region.is_active == True)
+    else:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Role is not authorized to view regional workload")
 
     now = utc_now()
-    regions = db.query(Region).filter(Region.is_active == True).all()
+    regions = region_query.all()
     workload = []
 
     for reg in regions:

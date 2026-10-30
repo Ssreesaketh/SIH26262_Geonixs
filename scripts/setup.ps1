@@ -54,8 +54,8 @@ if (-not (Test-Path $envPath) -or $Force) {
         $dbPassword = -join ($dbBytes | ForEach-Object { "{0:x2}" -f $_ })
 
         $envContent = $envContent.Replace("change-this-to-a-secure-random-32-byte-hex-string", $secretKey)
-        $envContent = $envContent.Replace("POSTGRES_PASSWORD=postgres", "POSTGRES_PASSWORD=$dbPassword")
-        $envContent = $envContent.Replace("DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/aicte_workflow", "DATABASE_URL=postgresql+psycopg2://postgres:$dbPassword@localhost:5432/aicte_workflow")
+        $envContent = $envContent.Replace("POSTGRES_PASSWORD=GENERATED_BY_SETUP_SCRIPT", "POSTGRES_PASSWORD=$dbPassword")
+        $envContent = $envContent.Replace("DATABASE_URL=postgresql+psycopg2://postgres:GENERATED_BY_SETUP_SCRIPT@localhost:5432/aicte_workflow", "DATABASE_URL=postgresql+psycopg2://postgres:$dbPassword@localhost:5432/aicte_workflow")
         Set-Content -Path $envPath -Value $envContent
         Write-Host "  [OK] Generated .env with random SECRET_KEY and database password (values hidden)." -ForegroundColor Green
     } else {
@@ -91,9 +91,6 @@ Write-Host "  Frontend: cd frontend; npm run dev" -ForegroundColor Yellow
 Write-Host "`nAccess Portal URL:  http://localhost:5173" -ForegroundColor Green
 Write-Host "Backend API Docs:   http://localhost:8000/docs" -ForegroundColor Green
 Write-Host "---------------------------------------------------------------------" -ForegroundColor Gray
-Write-Host "`nSeeded Credentials:" -ForegroundColor White
-Write-Host "  Regional Officer: officer.north@aicte.gov.in / Admin@AICTE2026!" -ForegroundColor White
-Write-Host "  Institution:      principal@zenith.edu.in    / Admin@AICTE2026!" -ForegroundColor White
-Write-Host "  Bureau Officer:   bureau.hq@aicte.gov.in     / Admin@AICTE2026!" -ForegroundColor White
-Write-Host "  Administrator:    admin@aicte.gov.in         / Admin@AICTE2026!" -ForegroundColor White
+Write-Host "`nSeeded demo identities use a legacy shared password that is public/compromised." -ForegroundColor Yellow
+Write-Host "Use seeded accounts only on an isolated synthetic-data instance; rotate or disable them before any shared deployment." -ForegroundColor Yellow
 Write-Host "=====================================================================" -ForegroundColor Cyan

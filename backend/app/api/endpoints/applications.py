@@ -35,15 +35,22 @@ def list_applications(
 ):
     query = db.query(Application).join(Institution).join(Region)
 
-    # Enforce Scope
+    # Enforce tenant and regional scope in the list query itself. Object-level
+    # checks on detail/action endpoints do not prevent registry-level disclosure.
     if current_user.role == "INSTITUTION_USER":
+        if not current_user.institution_id:
+            raise HTTPException(status_code=403, detail="Institution account has no institution assignment")
         query = query.filter(Application.institution_id == current_user.institution_id)
-    elif current_user.role in {"REGIONAL_OFFICER", "BUREAU_OFFICER", "SYSTEM_ADMIN"}:
-        # Officer workspaces share the same five-case registry. Action permissions
-        # and regional boundaries are enforced separately on write endpoints.
-        pass
-    elif region_id:
-        query = query.filter(Institution.region_id == region_id)
+    elif current_user.role == "REGIONAL_OFFICER":
+        if not current_user.region_id:
+            raise HTTPException(status_code=403, detail="Regional officer account has no region assignment")
+        query = query.filter(Institution.region_id == current_user.region_id)
+        # Regional officers cannot broaden or switch their assigned region using a query parameter.
+    elif current_user.role in {"BUREAU_OFFICER", "SYSTEM_ADMIN"}:
+        if region_id:
+            query = query.filter(Institution.region_id == region_id)
+    else:
+        raise HTTPException(status_code=403, detail="Role is not authorized to view the application registry")
 
     if stage:
         query = query.filter(Application.current_stage_code == stage)

@@ -105,7 +105,7 @@ def complete_evc(
     id: str,
     payload: EVCCompleteRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles(["REGIONAL_OFFICER", "EVC_MEMBER", "SYSTEM_ADMIN"]))
+    current_user: User = Depends(require_roles(["REGIONAL_OFFICER", "SYSTEM_ADMIN"]))
 ):
     evc = db.query(EVCEvent).filter(EVCEvent.id == id).first()
     if not evc:

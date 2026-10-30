@@ -65,7 +65,6 @@ def extract_pdf_pages(content: bytes) -> Dict[str, Any]:
                             method = "ocr"
                             ocr_pages += 1
                     except Exception:
-                        # Preserve the page as unreadable rather than failing the whole PDF.
                         text = text or ""
                 pages.append({"page": index + 1, "text": text[:12000], "method": method if text else "no_text_detected"})
     except ValueError:
@@ -82,17 +81,12 @@ def _tokens(text: str) -> List[str]:
 
 
 def retrieve_chunks(db, query: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Retrieve active curated regulatory chunks using local vectors when available.
-
-    Ollama embeddings are optional. If the embedding model is not configured/available,
-    a lexical ranking fallback keeps the local prototype usable without a model.
-    """
+    """Retrieve active curated regulatory chunks using local vectors when available."""
     from app.models.entities import RegulatoryChunk
     rows = db.query(RegulatoryChunk).filter(RegulatoryChunk.is_active.is_(True)).all()
     qtokens = set(_tokens(query))
     if not qtokens or not rows:
         return []
-
     query_vectors = _ollama_embed([query], timeout=12)
     if query_vectors and all(row.embedding_json for row in rows):
         scored_vectors = []
@@ -108,7 +102,6 @@ def retrieve_chunks(db, query: str, limit: int = 5) -> List[Dict[str, Any]]:
             return [{"source_title": row.source_title, "source_url": row.source_url, "source_version": row.source_version,
                      "page_number": row.page_number, "text": row.chunk_text, "score": round(score, 4), "retrieval_mode": "local_embedding_cosine"}
                     for score, row in scored_vectors[:max(1, min(limit, 8))]]
-
     scored = []
     for row in rows:
         tokens = _tokens(row.chunk_text)
@@ -142,7 +135,6 @@ def _ollama_generate(prompt: str, timeout: int = 75) -> Optional[str]:
 
 
 def _ollama_embed(texts: List[str], timeout: int = 60) -> Optional[List[List[float]]]:
-    """Create optional local embeddings through Ollama's /api/embed endpoint."""
     if not OLLAMA_URL or not texts:
         return None
     body = json.dumps({"model": OLLAMA_EMBED_MODEL, "input": [t[:5000] for t in texts]}).encode("utf-8")
@@ -204,7 +196,6 @@ def evaluate_document(content: bytes, document_type: str, display_name: str, reg
         findings.append({"category": "extraction", "severity": "info", "title": "OCR was used",
                          "details": f"Text on {extracted['ocr_pages']} page(s) was extracted with OCR and may contain recognition errors.",
                          "evidence": [], "requires_human_review": True})
-
     engine_mode = "deterministic_fallback"
     ai_result = None
     if text and OLLAMA_URL:
@@ -214,7 +205,6 @@ def evaluate_document(content: bytes, document_type: str, display_name: str, reg
         ai_result = _parse_json_response(raw or "")
         if ai_result:
             engine_mode = "ollama_local"
-
     if ai_result:
         allowed_severity = {"info", "low", "medium", "high"}
         safe_findings = []
@@ -238,9 +228,9 @@ def evaluate_document(content: bytes, document_type: str, display_name: str, reg
         summary = ("Text extraction completed. No LLM evaluation was performed because a local Ollama model is not configured or available. "
                    "The result is a technical pre-check only, not a regulatory compliance decision.")
         fields = {"document_type_label": document_type, "text_character_count": extracted["text_chars"], "page_count": extracted["page_count"]}
-        limitations = ["LLM evaluation unavailable; configure OLLAMA_URL and OLLAMA_MODEL to enable local model analysis.",
-                       "No compliance pass/fail conclusion was generated.", "An authorized officer must review the original document."]
-
+        limitations = ["No LLM evaluation was performed; configure OLLAMA_URL and OLLAMA_MODEL to enable local model analysis.",
+                       "No compliance pass/fail conclusion was generated.",
+                       "An authorized officer must review the original document."]
     return {"summary": summary, "document_name": display_name, "document_type": document_type,
             "page_count": extracted["page_count"], "text_character_count": extracted["text_chars"],
             "ocr_pages": extracted["ocr_pages"], "has_extractable_text": extracted["has_extractable_text"],
@@ -258,7 +248,6 @@ def answer_question(question: str, chunks: List[Dict[str, Any]]) -> Dict[str, An
         answer = _ollama_generate(prompt, timeout=60)
         if answer:
             return {"answer": answer[:7000], "sources": [{"title": c["source_title"], "url": c["source_url"], "version": c["source_version"], "page": c["page_number"]} for c in chunks], "engine_mode": "ollama_local_rag", "grounded": True}
-    # No model available: show retrieved evidence rather than fabricate a generated answer.
     snippets = "\n\n".join(f"[{i+1}] {c['source_title']} (page {c.get('page_number') or 'unknown'}):\n{c['text'][:900]}" for i, c in enumerate(chunks))
     return {"answer": "The local LLM is not configured or unavailable. Below are the most relevant retrieved passages; this is retrieval-only, not a generated answer.\n\n" + snippets,
             "sources": [{"title": c["source_title"], "url": c["source_url"], "version": c["source_version"], "page": c["page_number"]} for c in chunks],
