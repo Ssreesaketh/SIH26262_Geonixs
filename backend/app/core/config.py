@@ -36,8 +36,18 @@ class Settings(BaseSettings):
                 raise ValueError("Production requires a unique SECRET_KEY of at least 32 characters.")
             if self.DATABASE_URL.startswith("sqlite"):
                 raise ValueError("Production must use PostgreSQL or another explicitly supported managed database.")
-            if not self.BACKEND_CORS_ORIGINS or any(not origin.startswith("https://") for origin in self.BACKEND_CORS_ORIGINS):
-                raise ValueError("Production CORS origins must be explicit HTTPS origins.")
+            # Local Compose binds the frontend to loopback HTTP only. Permit those
+            # exact loopback origins for the isolated local demo; all non-loopback
+            # production origins must use HTTPS.
+            loopback_http = {
+                "http://localhost:5173", "http://127.0.0.1:5173",
+                "http://localhost:3000", "http://127.0.0.1:3000",
+            }
+            if not self.BACKEND_CORS_ORIGINS or any(
+                not origin.startswith("https://") and origin not in loopback_http
+                for origin in self.BACKEND_CORS_ORIGINS
+            ):
+                raise ValueError("Production CORS origins must use HTTPS, except the exact loopback origins used by local Compose.")
         return self
 
     class Config:
