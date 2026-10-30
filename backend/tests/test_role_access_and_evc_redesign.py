@@ -63,7 +63,7 @@ def test_regional_officer_application_registry_is_region_scoped(client, officer_
     assert rows
     assert len(rows) == 4
     assert all(row["region_code"] == officer.region.code for row in rows)
-    assert all("APX-905" not in row.get("institution_code", "") for row in rows)
+    assert all(row["application_no"] != "APP-2026-AICTE-1004" for row in rows)
 
 
 def test_forms_are_role_scoped_and_downloadable(client, institution_token, officer_token):
