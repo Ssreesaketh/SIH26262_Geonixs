@@ -20,25 +20,45 @@ An integrated workflow workspace demonstrating role-aware AICTE approval case ma
 - [Limitations](#project-limitations-and-regulatory-notice)
 
 ## Project overview
-The prototype combines three operational views:
-1. **Control Tower** — applications, stage ageing, overdue work, alerts, and workload.
-2. **Case Workbench** — case management, workflow stages, deficiency returns with remarks, document records, and audit history.
-3. **Compliance Radar** — time-bound undertakings and expiring records such as lease documents and safety certificates.
+AICTE FlowGuard is a prototype for improving visibility and consistency across approval workflows. It brings application status, document readiness, compliance checks, authorized review, regulatory references, and deadline alerts into one workspace.
 
-Institution accounts are intended to see only their own institution's applications and documents. Officer actions are constrained by role, workflow stage, and resource scope.
+The main user journey follows the sequence in the SIH presentation:
 
-## Core capabilities
-- Role-based authentication and dashboards.
-- Application creation, submission, stage tracking, and workflow actions.
-- Document upload, review, correction resubmission, and version history.
-- EVC scheduling and officer-side review workflows.
-- Undertaking and document-expiry monitoring.
-- Alerts, reminders, and configurable escalation rules.
-- Versioned workflow templates; existing applications remain pinned to their selected version.
-- SHA-256 audit-chain snapshots for consequential application and system events.
-- Advisory PDF review and administrator-curated regulatory retrieval (RAG).
+1. User login.
+2. Application creation or selection.
+3. Document upload.
+4. OCR and field extraction.
+5. Completeness and compliance validation.
+6. Workflow routing and deadline engine.
+7. Authorized scrutiny and EVC scheduling.
+8. Decision or additional query.
+9. Status update and deadline tracking.
+10. Alerts, escalation, and audit log.
 
-Workflow thresholds and sample forms are demonstration material. They are not verified statutory AICTE requirements or official forms.
+The regulatory assistant uses an approved/curated guideline repository as its retrieval source. AI assists with document understanding and regulatory information retrieval; deterministic rules manage workflow and deadlines; authorized officials retain approval authority.
+
+## Core capabilities and implementation status
+The table distinguishes the proposed SIH scope from the current prototype. “Prototype present” does not mean production-ready or officially integrated.
+
+| SIH presentation capability | Current prototype status |
+|---|---|
+| Authentication, role-based access, application records and dashboards | Implemented as a prototype; role/object isolation still requires full negative testing. |
+| Document upload and checklist/completeness workflow | Implemented in prototype form; validation and review coverage still require testing. |
+| OCR, document parsing and structured field extraction | PDF text extraction/OCR path is present; extraction accuracy requires human verification and broader testing. |
+| Compliance and configurable workflow rules | Configurable workflow/deadline logic is present; seeded rules are illustrative, not official AICTE timelines. |
+| Authorized scrutiny, EVC scheduling, decision/additional query | Workflow stages and role-authorized actions are represented in the prototype; end-to-end role/stage validation remains a release task. |
+| Alerts, escalation and audit log | Alert/deadline and hash-chain audit features are present; delivery/operational reliability and external audit anchoring remain outstanding. |
+| RAG regulatory assistant | Curated-source retrieval is present; source currency, answer quality, citations and abstention need continued validation. |
+| Live AICTE/system integration | Not implemented; the prototype uses synthetic/demo data and documented interfaces. |
+
+The four implementation phases shown in the SIH presentation are reflected as follows:
+
+- **Phase 1 — Authentication, application records, dashboard:** prototype implementation present.
+- **Phase 2 — Workflow engine, document upload, checklist:** prototype implementation present.
+- **Phase 3 — OCR, document extraction, regulatory RAG:** prototype capabilities present but limited; human verification and source validation are required.
+- **Phase 4 — Alerts, audit trails, testing:** alert and audit features are present; full regression, browser, deployment and security testing remain incomplete.
+
+These are prototype implementation notes, not a claim of production completion. Workflow thresholds and sample forms are demonstration material, not verified statutory AICTE requirements or official forms.
 
 ## Technology stack
 | Layer | Technology |
@@ -194,9 +214,11 @@ Use only an operator-controlled trusted Ollama endpoint. Calls are synchronous i
 No malware scanning, comprehensive PDF sanitization, or automated verification of latest official regulations is currently provided. OCR and model output can be wrong or manipulated. Do not upload real student records, personal data, confidential institutional material, or sensitive documents before formal security/privacy review.
 
 ## Deployment status
-**No production deployment URL is currently published.** A hosting account/plugin connection, production configuration, successful deployment, and external smoke tests are required before claiming a live URL.
+**No production deployment URL is currently published.** The current documented run mode is local Docker Compose. Hosting, production configuration, persistent private storage, and external smoke tests have not been verified.
 
-Before deployment:
+A publicly accessible live URL is not part of the technical architecture described in the SIH idea presentation itself. Whether a live URL is required for your particular submission round depends on the current SIH portal fields and your college/SPOC's instructions. The README and GitHub repository link should not be treated as a substitute for a required demo video or prototype demonstration.
+
+Before any optional hosted demo:
 - Replace seeded credentials and disable public access to demo accounts.
 - Set unique production secrets in the hosting provider's environment settings.
 - Use managed/private PostgreSQL and private persistent document storage.
