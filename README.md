@@ -35,6 +35,8 @@ The main user journey follows the sequence in the SIH presentation:
 9. Status update and deadline tracking.
 10. Alerts, escalation, and audit log.
 
+The case workflow represents scrutiny and re-scrutiny, deficiency returns, EVC observations, and SAC/SHC recommendations where applicable to the configured case path. These are workflow records/recommendations; the prototype does not replace the competent authority's statutory decision.
+
 The regulatory assistant uses an approved/curated guideline repository as its retrieval source. AI assists with document understanding and regulatory information retrieval; deterministic rules manage workflow and deadlines; authorized officials retain approval authority.
 
 ## Core capabilities and implementation status
