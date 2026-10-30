@@ -46,6 +46,18 @@ def test_officers_share_five_case_registry_but_institution_is_tenant_scoped(
     assert all(row["assigned_role"] == "UNDER_PROCESS" for row in institution_response.json()["items"])
 
 
+def test_regional_officer_application_registry_is_region_scoped(client, officer_token, db_session):
+    officer = db_session.query(User).filter_by(email="officer.north@aicte.gov.in").first()
+    response = client.get(
+        "/api/v1/applications?page_size=100",
+        headers={"Authorization": f"Bearer {officer_token}"},
+    )
+    assert response.status_code == 200
+    rows = response.json()["items"]
+    assert rows
+    assert all(row["region_code"] == officer.region.code for row in rows)
+
+
 def test_forms_are_role_scoped_and_downloadable(client, institution_token, officer_token):
     institution_headers = {"Authorization": f"Bearer {institution_token}"}
     officer_headers = {"Authorization": f"Bearer {officer_token}"}
