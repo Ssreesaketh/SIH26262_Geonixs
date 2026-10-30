@@ -1,6 +1,7 @@
 import os
 from typing import List, Optional
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SIH26262 AICTE Approval & Compliance Platform"
@@ -26,6 +27,18 @@ class Settings(BaseSettings):
         "http://localhost:8000",
         "http://127.0.0.1:8000"
     ]
+
+
+    @model_validator(mode="after")
+    def validate_production_configuration(self):
+        if self.ENVIRONMENT.lower() == "production":
+            if self.SECRET_KEY == "sih26262-dev-super-secret-key-32-chars-long-minimum!" or len(self.SECRET_KEY) < 32:
+                raise ValueError("Production requires a unique SECRET_KEY of at least 32 characters.")
+            if self.DATABASE_URL.startswith("sqlite"):
+                raise ValueError("Production must use PostgreSQL or another explicitly supported managed database.")
+            if not self.BACKEND_CORS_ORIGINS or any(not origin.startswith("https://") for origin in self.BACKEND_CORS_ORIGINS):
+                raise ValueError("Production CORS origins must be explicit HTTPS origins.")
+        return self
 
     class Config:
         case_sensitive = True
